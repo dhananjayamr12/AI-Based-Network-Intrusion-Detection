@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 const API_URL = "http://127.0.0.1:8000";
 
@@ -12,6 +22,22 @@ function App() {
   const [predictionHistory, setPredictionHistory] = useState([]);
  const [totalPredictions, setTotalPredictions] = useState(0);
  const [totalAttacks, setTotalAttacks] = useState(0);
+const totalNormal = totalPredictions - totalAttacks;
+
+const chartData = [
+  {
+    name: "Normal",
+    count: totalNormal,
+  },
+  {
+    name: "Attacks",
+    count: totalAttacks,
+  },
+  {
+    name: "Total",
+    count: totalPredictions,
+  },
+];
 const [trafficInput, setTrafficInput] = useState({
   duration: "0.5",
   src_bytes: "200",
@@ -426,6 +452,59 @@ if (data.prediction_code === 1) {
         </section>
 
 <section className="panel history-panel">
+<section className="panel chart-panel">
+  <div className="panel-heading">
+    <div>
+      <h2>Traffic Analysis Overview</h2>
+      <p>Summary of model classifications during this session</p>
+    </div>
+    <span className="live-badge">SESSION DATA</span>
+  </div>
+
+  <div className="chart-container">
+    <ResponsiveContainer width="100%" height={300}>
+      <BarChart
+        data={chartData}
+        margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#273449" />
+
+        <XAxis
+          dataKey="name"
+          stroke="#94a3b8"
+        />
+
+        <YAxis
+          allowDecimals={false}
+          stroke="#94a3b8"
+        />
+
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "#111827",
+            border: "1px solid #334155",
+            borderRadius: "8px",
+            color: "#ffffff",
+          }}
+        />
+
+        <Legend />
+
+        <Bar
+          dataKey="count"
+          name="Classification Count"
+          fill="#38bdf8"
+          radius={[6, 6, 0, 0]}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
+
+  <p className="chart-disclaimer">
+    Counts reflect predictions made in this browser session. They do not
+    represent live network traffic statistics.
+  </p>
+</section>
   <div className="panel-heading">
     <div>
       <h2>Prediction History & Security Alerts</h2>
