@@ -2,6 +2,8 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
+import time
+import psutil
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,6 +35,43 @@ model = None
 
 if MODEL_PATH.exists():
     model = joblib.load(MODEL_PATH)
+# Network monitoring configuration
+NETWORK_REFRESH_INTERVAL = 3
+
+
+def get_network_stats():
+    """Return actual network interface counters and traffic rates."""
+
+    current_time = time.time()
+    current_stats = psutil.net_io_counters(pernic=True)
+
+    interfaces = []
+
+    for name, counters in current_stats.items():
+        interfaces.append({
+            "interface": name,
+            "bytes_sent": counters.bytes_sent,
+            "bytes_received": counters.bytes_recv,
+            "packets_sent": counters.packets_sent,
+            "packets_received": counters.packets_recv,
+            "errors_in": counters.errin,
+            "errors_out": counters.errout,
+            "drops_in": counters.dropin,
+            "drops_out": counters.dropout,
+        })
+
+    return {
+        "timestamp": time.strftime(
+            "%Y-%m-%dT%H:%M:%S",
+            time.localtime(current_time),
+        ),
+        "data_source": "actual_system_network_counters",
+        "interfaces": interfaces,
+        "note": (
+            "These are cumulative interface counters. "
+            "Traffic rates will be calculated by the frontend."
+        ),
+    }
 
 
 # Network traffic input schema
@@ -52,6 +91,10 @@ def home():
         "docs": "/docs"
     }
 
+@app.get("/network/stats")
+def network_stats():
+    """Expose actual network interface statistics."""
+    return get_network_stats()
 
 @app.get("/health")
 def health():

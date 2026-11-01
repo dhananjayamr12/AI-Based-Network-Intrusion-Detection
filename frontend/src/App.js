@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AdminLogin from "./AdminLogin";
 import "./App.css";
 import {
   ResponsiveContainer,
@@ -22,6 +23,22 @@ function App() {
   const [predictionHistory, setPredictionHistory] = useState([]);
  const [totalPredictions, setTotalPredictions] = useState(0);
  const [totalAttacks, setTotalAttacks] = useState(0);
+// Live network monitoring state
+const [networkStats, setNetworkStats] = useState(null);
+const [networkStatus, setNetworkStatus] = useState("Connecting...");
+const [networkError, setNetworkError] = useState("");
+const [isLoggedIn, setIsLoggedIn] = useState(false);
+function handleLogout() {
+  setIsLoggedIn(false);
+  setPrediction(null);
+  setError("");
+}
+const [networkRates, setNetworkRates] = useState({
+  downloadKBps: 0,
+  uploadKBps: 0,
+  incomingPacketsPerSec: 0,
+  outgoingPacketsPerSec: 0,
+});
 const totalNormal = totalPredictions - totalAttacks;
 
 const chartData = [
@@ -46,10 +63,19 @@ const [trafficInput, setTrafficInput] = useState({
   failed_connections: "15",
 });
 
-  useEffect(() => {
-    checkAPI();
-  }, []);
+useEffect(() => {
+  checkAPI();
+  fetchNetworkStats();
 
+  const networkInterval = setInterval(() => {
+    fetchNetworkStats();
+  }, 3000);
+
+  return () => {
+    clearInterval(networkInterval);
+  };
+}, []);
+  // Check FastAPI backend and AI model status
   async function checkAPI() {
     try {
       const response = await fetch(`${API_URL}/health`);
@@ -68,6 +94,85 @@ const [trafficInput, setTrafficInput] = useState({
     }
   }
 
+  // Fetch actual network interface statistics
+  async function fetchNetworkStats() {
+    try {
+      const response = await fetch(`${API_URL}/network/stats`);
+
+      if (!response.ok) {
+        throw new Error("Unable to fetch network statistics");
+      }
+
+      const data = await response.json();
+
+      // Select the actual Wi-Fi interface
+      const wifi = data.interfaces.find(
+        (item) => item.interface.toLowerCase() === "wi-fi"
+      );
+
+      if (!wifi) {
+        throw new Error("Wi-Fi interface not found");
+      }
+
+      const currentTime = Date.now();
+
+      setNetworkStats((previous) => {
+        // Calculate speeds using two successive readings
+        if (previous && previous.wifi) {
+          const elapsedSeconds =
+            (currentTime - previous.sampleTime) / 1000;
+
+          if (elapsedSeconds > 0) {
+            setNetworkRates({
+              downloadKBps:
+                Math.max(
+                  0,
+                  wifi.bytes_received -
+                    previous.wifi.bytes_received
+                ) /
+                elapsedSeconds /
+                1024,
+
+              uploadKBps:
+                Math.max(
+                  0,
+                  wifi.bytes_sent - previous.wifi.bytes_sent
+                ) /
+                elapsedSeconds /
+                1024,
+
+              incomingPacketsPerSec:
+                Math.max(
+                  0,
+                  wifi.packets_received -
+                    previous.wifi.packets_received
+                ) / elapsedSeconds,
+
+              outgoingPacketsPerSec:
+                Math.max(
+                  0,
+                  wifi.packets_sent - previous.wifi.packets_sent
+                ) / elapsedSeconds,
+            });
+          }
+        }
+
+        // Store the current reading for the next calculation
+        return {
+          wifi,
+          sampleTime: currentTime,
+        };
+      });
+
+      setNetworkStatus("Monitoring");
+      setNetworkError("");
+    } catch (err) {
+      setNetworkStatus("Unavailable");
+      setNetworkError(err.message);
+    }
+  }
+
+  // Submit traffic features to the experimental AI model
   async function testPrediction() {
     setLoading(true);
     setError("");
@@ -79,39 +184,45 @@ const [trafficInput, setTrafficInput] = useState({
         headers: {
           "Content-Type": "application/json",
         },
-   body: JSON.stringify({
-  duration: Number(trafficInput.duration),
-  src_bytes: Number(trafficInput.src_bytes),
-  dst_bytes: Number(trafficInput.dst_bytes),
-  packets: Number(trafficInput.packets),
-  failed_connections: Number(trafficInput.failed_connections),
-}),
+        body: JSON.stringify({
+          duration: Number(trafficInput.duration),
+          src_bytes: Number(trafficInput.src_bytes),
+          dst_bytes: Number(trafficInput.dst_bytes),
+          packets: Number(trafficInput.packets),
+          failed_connections: Number(
+            trafficInput.failed_connections
+          ),
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Prediction request failed");
+        throw new Error(
+          data.detail || "Prediction request failed"
+        );
       }
 
       setPrediction(data);
 
-const record = {
-  id: Date.now(),
-  timestamp: new Date().toLocaleString(),
-  prediction: data.prediction,
-  prediction_code: data.prediction_code,
-  attack_probability: data.attack_probability,
-  normal_probability: data.normal_probability,
-};
+      const record = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString(),
+        prediction: data.prediction,
+        prediction_code: data.prediction_code,
+        attack_probability: data.attack_probability,
+        normal_probability: data.normal_probability,
+      };
 
-setPredictionHistory((previous) => [record, ...previous].slice(0, 10));
+      setPredictionHistory((previous) =>
+        [record, ...previous].slice(0, 10)
+      );
 
-setTotalPredictions((previous) => previous + 1);
+      setTotalPredictions((previous) => previous + 1);
 
-if (data.prediction_code === 1) {
-  setTotalAttacks((previous) => previous + 1);
-}
+      if (data.prediction_code === 1) {
+        setTotalAttacks((previous) => previous + 1);
+      }
     } catch (err) {
       setError(
         "Unable to obtain a prediction. Check that the FastAPI server is running."
@@ -120,11 +231,18 @@ if (data.prediction_code === 1) {
       setLoading(false);
     }
   }
-
   const isAttack =
     prediction?.prediction_code === 1;
 
+  if (!isLoggedIn) {
   return (
+    <AdminLogin
+      onLogin={() => setIsLoggedIn(true)}
+    />
+  );
+}
+
+return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
@@ -150,6 +268,15 @@ if (data.prediction_code === 1) {
           </div>
         </div>
       </aside>
+<div className="sidebar-logout">
+  <button
+    type="button"
+    className="logout-button"
+    onClick={handleLogout}
+  >
+    <span>↪</span> Logout
+  </button>
+</div>
 
       <main className="main-content">
         <header className="topbar">
@@ -165,7 +292,56 @@ if (data.prediction_code === 1) {
             ↻ Refresh Status
           </button>
         </header>
+        <section className="network-monitor-section">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">LIVE NETWORK MONITOR</p>
+              <h2>Wi-Fi Traffic Activity</h2>
+              <p className="subtitle">
+                Actual system network counters · Refreshes every 3 seconds
+              </p>
+            </div>
 
+            <span
+              className={`network-status-badge ${
+                networkStatus === "Monitoring" ? "online" : "offline"
+              }`}
+            >
+              ● {networkStatus}
+            </span>
+          </div>
+
+          {networkError && (
+            <p className="network-error">{networkError}</p>
+          )}
+
+          <div className="network-monitor-grid">
+            <div className="network-monitor-card">
+              <span className="network-monitor-label">↓ Download Speed</span>
+              <h3>{networkRates.downloadKBps.toFixed(2)} <small>KB/s</small></h3>
+            </div>
+
+            <div className="network-monitor-card">
+              <span className="network-monitor-label">↑ Upload Speed</span>
+              <h3>{networkRates.uploadKBps.toFixed(2)} <small>KB/s</small></h3>
+            </div>
+
+            <div className="network-monitor-card">
+              <span className="network-monitor-label">Incoming Packets</span>
+              <h3>{networkRates.incomingPacketsPerSec.toFixed(0)} <small>packets/s</small></h3>
+            </div>
+
+            <div className="network-monitor-card">
+              <span className="network-monitor-label">Outgoing Packets</span>
+              <h3>{networkRates.outgoingPacketsPerSec.toFixed(0)} <small>packets/s</small></h3>
+            </div>
+          </div>
+
+          <p className="network-monitor-note">
+            These figures represent Wi-Fi interface activity. They do not
+            independently indicate an attack or represent AI detection results.
+          </p>
+        </section>
         <section className="notice">
           <span>ⓘ</span>
           <p>
