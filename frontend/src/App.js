@@ -1,15 +1,21 @@
 import React, { useEffect, useState } from "react";
 import AdminLogin from "./AdminLogin";
 import "./App.css";
+
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 const API_URL = "http://127.0.0.1:8000";
@@ -21,8 +27,19 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [predictionHistory, setPredictionHistory] = useState([]);
+const [securityEvents, setSecurityEvents] = useState([]);
  const [totalPredictions, setTotalPredictions] = useState(0);
  const [totalAttacks, setTotalAttacks] = useState(0);
+ const [predictionTrend, setPredictionTrend] = useState([]);
+ const [totalDetectionEvents, setTotalDetectionEvents] = useState(0);
+ const [theme, setTheme] = useState("dark");
+
+function toggleTheme() {
+  const newTheme = theme === "dark" ? "light" : "dark";
+
+  setTheme(newTheme);
+  localStorage.setItem("sentinel-theme", newTheme);
+}
 // Live network monitoring state
 const [networkStats, setNetworkStats] = useState(null);
 const [networkStatus, setNetworkStatus] = useState("Connecting...");
@@ -64,9 +81,17 @@ const [trafficInput, setTrafficInput] = useState({
 });
 
 useEffect(() => {
+  document.body.setAttribute("data-theme", theme);
+}, [theme]);
+// Load dashboard data when the component starts
+useEffect(() => {
   checkAPI();
   fetchNetworkStats();
+  fetchPredictionHistory();
+  fetchDashboardStats();
+  fetchSecurityEvents();
 
+  // Refresh network statistics every 3 seconds
   const networkInterval = setInterval(() => {
     fetchNetworkStats();
   }, 3000);
@@ -75,6 +100,119 @@ useEffect(() => {
     clearInterval(networkInterval);
   };
 }, []);
+
+
+// Fetch persistent prediction history from PostgreSQL
+async function fetchPredictionHistory() {
+  try {
+    const response = await fetch(`${API_URL}/predictions?limit=20`);
+
+    if (!response.ok) {
+      throw new Error("Unable to fetch prediction history");
+    }
+
+    const data = await response.json();
+
+    const history = data.predictions.map((record) => ({
+      id: record.prediction_id,
+      timestamp: new Date(record.created_at).toLocaleString(),
+      prediction:
+        record.predicted_label === "ATTACK"
+          ? "ATTACK (synthetic)"
+          : "NORMAL (synthetic)",
+      prediction_code: record.predicted_label === "ATTACK" ? 1 : 0,
+      attack_probability: record.attack_probability,
+      normal_probability: record.normal_probability,
+    }));
+
+    setPredictionHistory(history);
+
+    // Prepare chronological prediction trend data
+    const sortedPredictions = [...data.predictions].reverse();
+
+    const trendData = sortedPredictions.map((item) => ({
+      time: new Date(item.created_at).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      attack: item.predicted_label === "ATTACK" ? 1 : 0,
+      normal: item.predicted_label === "NORMAL" ? 1 : 0,
+    }));
+
+    setPredictionTrend(trendData);
+
+  } catch (err) {
+    console.error("Prediction history error:", err);
+  }
+}
+
+
+
+// Fetch dashboard statistics from PostgreSQL
+async function fetchDashboardStats() {
+  try {
+    const response = await fetch(`${API_URL}/dashboard/stats`);
+
+    if (!response.ok) {
+      throw new Error("Unable to fetch dashboard statistics");
+    }
+
+    const data = await response.json();
+    const stats = data.statistics;
+
+    setTotalPredictions(data.statistics.total_predictions || 0);
+setTotalAttacks(data.statistics.attack_predictions || 0);
+setTotalDetectionEvents(data.statistics.total_detection_events || 0);
+  } catch (err) {
+    console.error("Dashboard statistics error:", err);
+  }
+}
+
+
+// Fetch security events from PostgreSQL
+async function fetchSecurityEvents() {
+  try {
+    const response = await fetch(`${API_URL}/security/events?limit=20`);
+
+    if (!response.ok) {
+      throw new Error("Unable to fetch security events");
+    }
+
+    const data = await response.json();
+
+    setSecurityEvents(data.events);
+  } catch (err) {
+    console.error("Security events error:", err);
+  }
+}
+// Update security event status in PostgreSQL
+async function updateSecurityEventStatus(eventId, newStatus) {
+  try {
+    const response = await fetch(
+      `${API_URL}/security/events/${eventId}?status=${encodeURIComponent(newStatus)}`,
+      {
+        method: "PATCH",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Unable to update security event");
+    }
+
+    // Refresh security events after successful update
+    await fetchSecurityEvents();
+
+    console.log("Security event updated:", data.message);
+
+  } catch (err) {
+    console.error("Status update error:", err);
+    alert(err.message);
+  }
+}
   // Check FastAPI backend and AI model status
   async function checkAPI() {
     try {
@@ -205,24 +343,12 @@ useEffect(() => {
 
       setPrediction(data);
 
-      const record = {
-        id: Date.now(),
-        timestamp: new Date().toLocaleString(),
-        prediction: data.prediction,
-        prediction_code: data.prediction_code,
-        attack_probability: data.attack_probability,
-        normal_probability: data.normal_probability,
-      };
+      // Refresh prediction history from PostgreSQL
+ await fetchPredictionHistory();
 
-      setPredictionHistory((previous) =>
-        [record, ...previous].slice(0, 10)
-      );
-
-      setTotalPredictions((previous) => previous + 1);
-
-      if (data.prediction_code === 1) {
-        setTotalAttacks((previous) => previous + 1);
-      }
+     // Refresh statistics from PostgreSQL
+ await fetchDashboardStats();
+ await fetchSecurityEvents();
     } catch (err) {
       setError(
         "Unable to obtain a prediction. Check that the FastAPI server is running."
@@ -241,6 +367,25 @@ useEffect(() => {
     />
   );
 }
+
+const predictionDistribution = [
+  {
+    name: "Normal",
+    value: totalPredictions - totalAttacks,
+  },
+  {
+    name: "Attack",
+    value: totalAttacks,
+  },
+];
+
+const severityData = [
+  { name: "Critical", value: securityEvents.filter(e => e.severity === "CRITICAL").length },
+  { name: "High", value: securityEvents.filter(e => e.severity === "HIGH").length },
+  { name: "Medium", value: securityEvents.filter(e => e.severity === "MEDIUM").length },
+  { name: "Low", value: securityEvents.filter(e => e.severity === "LOW").length },
+  { name: "Unclassified", value: securityEvents.filter(e => !e.severity || e.severity === "UNCLASSIFIED").length },
+];
 
 return (
     <div className="app">
@@ -287,6 +432,13 @@ return (
               AI-powered network traffic classification and monitoring
             </p>
           </div>
+          <button
+  className="theme-toggle"
+  onClick={toggleTheme}
+  type="button"
+>
+  {theme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode"}
+</button>
 
           <button className="refresh-button" onClick={checkAPI}>
             ↻ Refresh Status
@@ -351,49 +503,219 @@ return (
           </p>
         </section>
 
-        <section className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-top">
-              <span>API STATUS</span>
-              <span className="stat-icon blue">⌘</span>
-            </div>
-            <h2 className={apiStatus === "Connected" ? "green-text" : ""}>
-              {apiStatus}
-            </h2>
-            <p>FastAPI backend</p>
-          </div>
+        {/* DASHBOARD STATISTICS */}
+<section className="stats-grid">
 
-          <div className="stat-card">
-            <div className="stat-top">
-              <span>AI MODEL</span>
-              <span className="stat-icon purple">✧</span>
-            </div>
-            <h2>{modelLoaded ? "Loaded" : "Unavailable"}</h2>
-            <p>Random Forest classifier</p>
-          </div>
+<div className="stat-card">
+  <div className="stat-top">
+    <span>TOTAL DETECTION EVENTS</span>
+    <span className="stat-icon orange">🚨</span>
+  </div>
+  <h2>{totalDetectionEvents}</h2>
+  <p>Detection events stored in PostgreSQL</p>
+</div>
 
-          <div className="stat-card">
-            <div className="stat-top">
-              <span>DATA SOURCE</span>
-              <span className="stat-icon orange">▤</span>
-            </div>
-            <h2>Synthetic</h2>
-            <p>Generated development data</p>
-          </div>
 
-          <div className="stat-card">
-            <div className="stat-top">
-              <span>MODEL TEST</span>
-              <span className="stat-icon green">✓</span>
-            </div>
-            <h2>{prediction ? "Completed" : "Not run"}</h2>
-            <p>Latest prediction request</p>
-          </div>
-        </section>
+  {/* Total Predictions */}
+  <div className="stat-card">
+    <div className="stat-top">
+      <span>TOTAL PREDICTIONS</span>
+      <span className="stat-icon blue">📊</span>
+    </div>
+    <h2>{totalPredictions}</h2>
+    <p>Total predictions stored in PostgreSQL</p>
+  </div>
+
+  {/* Attack Classifications */}
+  <div className="stat-card">
+    <div className="stat-top">
+      <span>ATTACK CLASSIFICATIONS</span>
+      <span className="stat-icon orange">⚠</span>
+    </div>
+    <h2>{totalAttacks}</h2>
+    <p>Records classified as potential attacks</p>
+  </div>
+
+  {/* Normal Classifications */}
+  <div className="stat-card">
+    <div className="stat-top">
+      <span>NORMAL CLASSIFICATIONS</span>
+      <span className="stat-icon green">✓</span>
+    </div>
+    <h2>{totalPredictions - totalAttacks}</h2>
+    <p>Records classified as normal</p>
+  </div>
+
+  {/* Recent History */}
+  <div className="stat-card">
+    <div className="stat-top">
+      <span>RECENT HISTORY</span>
+      <span className="stat-icon purple">◷</span>
+    </div>
+    <h2>{predictionHistory.length} / 20</h2>
+    <p>Latest prediction records retrieved from PostgreSQL</p>
+  </div>
+
+</section>
+{/* PREDICTION ANALYTICS */}
+<section className="panel analytics-panel">
+  <div className="panel-heading">
+    <div>
+      <h2>Attack vs Normal Distribution</h2>
+      <p>Prediction classification breakdown from PostgreSQL</p>
+    </div>
+    <span className="live-badge">LIVE DATA</span>
+  </div>
+
+  {totalPredictions === 0 ? (
+    <div className="empty-history">
+      <p>No prediction data available yet.</p>
+    </div>
+  ) : (
+    <div style={{ width: "100%", height: "320px" }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={predictionDistribution}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            outerRadius={110}
+            label={({ name, value }) => `${name}: ${value}`}
+          >
+            <Cell fill="#22c55e" />
+            <Cell fill="#ef4444" />
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  )}
+</section>
+
+{/* PREDICTION TRENDS */}
+<section className="panel analytics-panel">
+  <div className="panel-heading">
+    <div>
+      <h2>Prediction Trends</h2>
+      <p>Historical attack and normal classifications</p>
+    </div>
+    <span className="live-badge">DATABASE HISTORY</span>
+  </div>
+
+  {predictionTrend.length === 0 ? (
+    <div className="empty-history">
+      <p>No prediction history available.</p>
+    </div>
+  ) : (
+    <div style={{ width: "100%", height: "320px" }}>
+      <ResponsiveContainer width="100%" height="100%">
+  <LineChart data={predictionTrend}>
+    <CartesianGrid
+      strokeDasharray="3 3"
+      stroke="#334155"
+    />
+
+    <XAxis
+      dataKey="time"
+      stroke="#94a3b8"
+      tick={{ fontSize: 11 }}
+    />
+
+    <YAxis
+      allowDecimals={false}
+      domain={[0, 1]}
+      stroke="#94a3b8"
+    />
+
+    <Tooltip
+      contentStyle={{
+        backgroundColor: "#172338",
+        border: "1px solid #334155",
+        borderRadius: "8px",
+        color: "#ffffff",
+      }}
+    />
+
+    <Legend />
+
+    <Line
+      type="monotone"
+      dataKey="normal"
+      name="Normal Traffic"
+      stroke="#22c55e"
+      strokeWidth={3}
+      dot={{ r: 4 }}
+      activeDot={{ r: 7 }}
+    />
+
+    <Line
+      type="monotone"
+      dataKey="attack"
+      name="Attack Classifications"
+      stroke="#ef4444"
+      strokeWidth={3}
+      dot={{ r: 4 }}
+      activeDot={{ r: 7 }}
+    />
+  </LineChart>
+</ResponsiveContainer>
+    </div>
+  )}
+</section>
+
+{/* DETECTION SEVERITY ANALYTICS */}
+<section className="panel analytics-panel">
+  <div className="panel-heading">
+    <div>
+      <h2>Detection Severity Analytics</h2>
+      <p>Distribution of security events by severity</p>
+    </div>
+    <span className="live-badge">POSTGRESQL DATA</span>
+  </div>
+
+  {securityEvents.length === 0 ? (
+    <div className="empty-history">
+      <p>No security events available.</p>
+    </div>
+  ) : (
+    <div style={{ width: "100%", height: "340px" }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={severityData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <XAxis dataKey="name" stroke="#94a3b8" />
+          <YAxis allowDecimals={false} stroke="#94a3b8" />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="value" name="Security Events">
+            {severityData.map((entry, index) => {
+              const severityColors = {
+                Critical: "#ef4444",
+                High: "#f97316",
+                Medium: "#eab308",
+                Low: "#3b82f6",
+                Unclassified: "#94a3b8",
+              };
+
+              return (
+                <Cell
+                  key={`severity-${index}`}
+                  fill={severityColors[entry.name]}
+                />
+              );
+            })}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )}
+</section>
 
         <section className="content-grid">
           <section className="stats-grid activity-stats">
-  <div className="stat-card">
+         <div className="stat-card">
     <div className="stat-top">
       <span>TOTAL PREDICTIONS</span>
       <span className="stat-icon blue">↗</span>
@@ -749,6 +1071,95 @@ return (
     These entries represent model predictions on synthetic test records.
     They are not confirmed real-world security incidents.
   </p>
+  {/* SECURITY ALERTS SECTION */}
+<div className="security-alerts-section">
+
+  <div className="panel-heading">
+    <div>
+      <h2>Security Alerts</h2>
+      <p>Detection events retrieved from PostgreSQL</p>
+    </div>
+
+    <span className="live-badge">
+      {securityEvents.length} EVENTS
+    </span>
+  </div>
+
+  {securityEvents.length === 0 ? (
+    <div className="empty-history">
+      <span>🛡️</span>
+      <h3>No security events recorded</h3>
+      <p>
+        Security events will appear here when the model
+        classifies a prediction as ATTACK.
+      </p>
+    </div>
+  ) : (
+    <div className="table-wrapper">
+      <table className="history-table">
+
+        <thead>
+          <tr>
+            <th>Event ID</th>
+            <th>Classification</th>
+            <th>Severity</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {securityEvents.map((event) => (
+            <tr key={event.event_id}>
+
+              <td>#{event.event_id}</td>
+
+              <td>
+                <span className="alert-label attack-label">
+                  {event.predicted_label || "ATTACK"}
+                </span>
+              </td>
+
+              <td>
+                <span className="severity-badge">
+                  {event.severity || "UNCLASSIFIED"}
+                </span>
+              </td>
+
+              <td>
+                {event.description || "No description available"}
+              </td>
+
+            <td>
+  <select
+    className="status-select"
+    value={event.status || "OPEN"}
+    onChange={(e) =>
+      updateSecurityEventStatus(
+        event.event_id,
+        e.target.value
+      )
+    }
+  >
+    <option value="OPEN">OPEN</option>
+    <option value="INVESTIGATING">INVESTIGATING</option>
+    <option value="RESOLVED">RESOLVED</option>
+  </select>
+</td>
+              <td>
+                {new Date(event.created_at).toLocaleString()}
+              </td>
+
+            </tr>
+          ))}
+        </tbody>
+
+      </table>
+    </div>
+  )}
+
+</div>
 </section>
         <footer className="footer">
           <span>Sentinel AI · Network Intrusion Detection Platform</span>

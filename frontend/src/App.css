@@ -800,3 +800,343 @@ button:disabled {
     font-size: 22px;
   }
 }
+/* ===== SECURITY ALERTS SECTION ===== */
+
+.security-alerts-section {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.severity-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fb923c;
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+}
+
+.security-alerts-section .table-wrapper {
+  overflow-x: auto;
+}
+
+.security-alerts-section .history-table {
+  min-width: 850px;
+}
+
+.security-alerts-section .history-table td {
+  vertical-align: middle;
+}
+
+/* SECURITY ALERT STATUS MANAGEMENT */
+
+.status-select {
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: #17243a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.status-select:focus {
+  border-color: #3b82f6;
+}
+
+.status-select option {
+  background: #17243a;
+  color: #ffffff;
+}
+
+.status-select:hover {
+  border-color: #3b82f6;
+}
+
+/* THEME SWITCH BUTTON */
+.theme-toggle {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #263449;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.theme-toggle:hover {
+  background: #3b4c65;
+}
+
+/* LIGHT MODE */
+body[data-theme="light"] {
+  background: #f1f5f9;
+  color: #172033;
+}
+
+body[data-theme="light"] .app-container {
+  background: #f1f5f9;
+  color: #172033;
+}
+
+body[data-theme="light"] .topbar,
+body[data-theme="light"] .panel,
+body[data-theme="light"] .stat-card,
+body[data-theme="light"] .network-monitor {
+  background: #ffffff;
+  color: #172033;
+  border-color: #dbe3ee;
+}
+
+body[data-theme="light"] h1,
+body[data-theme="light"] h2,
+body[data-theme="light"] h3,
+body[data-theme="light"] p,
+body[data-theme="light"] span {
+  color: inherit;
+}
+
+body[data-theme="light"] .theme-toggle {
+  background: #e2e8f0;
+  color: #172033;
+  border-color: #cbd5e1;
+}
+
+body[data-theme="light"] .theme-toggle:hover {
+  background: #cbd5e1;
+}
+
+body[data-theme="light"] .history-table th {
+  background: #eaf0f7;
+  color: #172033;
+}
+
+body[data-theme="light"] .history-table td {
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+body[data-theme="light"] .status-select {
+  background: #ffffff;
+  color: #172033;
+  border-color: #cbd5e1;
+}
+
+body[data-theme="light"] .status-select option {
+  background: #ffffff;
+  color: #172033;
+}
+/* =================================
+   SENTINEL AI - COMPLETE LIGHT MODE
+================================= */
+
+body[data-theme="light"] {
+  background: #f1f5f9 !important;
+  color: #172033 !important;
+}
+
+/* Main dashboard */
+body[data-theme="light"] .app-container {
+  background: #f1f5f9 !important;
+  color: #172033 !important;
+}
+
+/* Header and dashboard panels */
+body[data-theme="light"] .topbar,
+body[data-theme="light"] .panel,
+body[data-theme="light"] .stat-card,
+body[data-theme="light"] .network-monitor,
+body[data-theme="light"] .prediction-panel,
+body[data-theme="light"] .analytics-panel,
+body[data-theme="light"] .security-alerts-section {
+  background: #ffffff !important;
+  color: #172033 !important;
+  border-color: #dbe3ee !important;
+}
+
+/* Network monitor heading and text */
+body[data-theme="light"] .network-monitor h2,
+body[data-theme="light"] .network-monitor h3,
+body[data-theme="light"] .network-monitor p,
+body[data-theme="light"] .network-monitor span,
+body[data-theme="light"] .network-monitor-label {
+  color: #172033 !important;
+}
+
+/* Network monitor metric cards */
+body[data-theme="light"] .network-monitor .stat-card,
+body[data-theme="light"] .network-monitor .network-stat-card,
+body[data-theme="light"] .network-monitor .monitor-card {
+  background: #f1f5f9 !important;
+  color: #172033 !important;
+  border: 1px solid #dbe3ee !important;
+}
+
+/* Dashboard statistics */
+body[data-theme="light"] .stat-card h2,
+body[data-theme="light"] .stat-card p,
+body[data-theme="light"] .stat-card span {
+  color: #172033;
+}
+
+/* Tables */
+body[data-theme="light"] .history-table th {
+  background: #e2e8f0 !important;
+  color: #172033 !important;
+}
+
+body[data-theme="light"] .history-table td {
+  background: #ffffff;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Input fields */
+body[data-theme="light"] input,
+body[data-theme="light"] select,
+body[data-theme="light"] textarea {
+  background: #ffffff;
+  color: #172033;
+  border-color: #cbd5e1;
+}
+
+/* Theme button */
+body[data-theme="light"] .theme-toggle {
+  background: #e2e8f0;
+  color: #172033;
+  border: 1px solid #cbd5e1;
+}
+
+/* Sidebar */
+body[data-theme="light"] .sidebar {
+  background: #ffffff;
+  color: #172033;
+  border-right: 1px solid #dbe3ee;
+}
+
+body[data-theme="light"] .sidebar a,
+body[data-theme="light"] .sidebar span,
+body[data-theme="light"] .sidebar p {
+  color: #334155;
+}
+
+/* Development notice */
+body[data-theme="light"] .notice {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+/* =====================================
+   SENTINEL AI PREMIUM DARK THEME
+===================================== */
+
+body[data-theme="dark"] {
+  background: #080d18 !important;
+  color: #e2e8f0 !important;
+}
+
+body[data-theme="dark"] .app-container {
+  background: #080d18 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Dashboard header */
+body[data-theme="dark"] .topbar {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-color: #263449 !important;
+}
+
+/* Main panels */
+body[data-theme="dark"] .panel,
+body[data-theme="dark"] .network-monitor,
+body[data-theme="dark"] .analytics-panel {
+  background: #111827 !important;
+  color: #e2e8f0 !important;
+  border-color: #263449 !important;
+}
+
+/* Statistics cards */
+body[data-theme="dark"] .stat-card {
+  background: #172338 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #293951 !important;
+}
+
+body[data-theme="dark"] .stat-card h2 {
+  color: #ffffff !important;
+}
+
+body[data-theme="dark"] .stat-card p,
+body[data-theme="dark"] .stat-card span {
+  color: #cbd5e1 !important;
+}
+
+/* Network monitor */
+body[data-theme="dark"] .network-monitor h2,
+body[data-theme="dark"] .network-monitor h3,
+body[data-theme="dark"] .network-monitor p,
+body[data-theme="dark"] .network-monitor span {
+  color: #e2e8f0 !important;
+}
+
+/* Tables */
+body[data-theme="dark"] .history-table th {
+  background: #1e293b !important;
+  color: #ffffff !important;
+}
+
+body[data-theme="dark"] .history-table td {
+  background: #111827 !important;
+  color: #cbd5e1 !important;
+  border-color: #293951 !important;
+}
+
+/* Input fields */
+body[data-theme="dark"] input,
+body[data-theme="dark"] select,
+body[data-theme="dark"] textarea {
+  background: #172338 !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+}
+
+/* Security alerts */
+body[data-theme="dark"] .security-alerts-section {
+  background: transparent !important;
+  color: #e2e8f0 !important;
+}
+
+/* Development notice */
+body[data-theme="dark"] .notice {
+  background: #172338 !important;
+  color: #bfdbfe !important;
+  border-color: #334155 !important;
+}
+
+/* Theme button */
+body[data-theme="dark"] .theme-toggle {
+  background: #263449 !important;
+  color: #ffffff !important;
+  border-color: #475569 !important;
+}
