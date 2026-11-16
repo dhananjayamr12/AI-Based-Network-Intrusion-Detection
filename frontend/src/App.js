@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from "react";
 import AdminLogin from "./AdminLogin";
+import LandingPage from "./LandingPage";
+import RegistrationPage from "./RegistrationPage";
+import RoleSelection from "./RoleSelection";
+import IPAnalysis from "./IPAnalysis";
+import ReportsAnalytics from "./ReportsAnalytics";
+import {
+  IntrusionDetection,
+  NetworkMonitoring,
+  SecurityAlerts,
+} from "./ModulePages";
 import "./App.css";
 
 import {
@@ -45,8 +55,17 @@ const [networkStats, setNetworkStats] = useState(null);
 const [networkStatus, setNetworkStatus] = useState("Connecting...");
 const [networkError, setNetworkError] = useState("");
 const [isLoggedIn, setIsLoggedIn] = useState(false);
+const [currentPage, setCurrentPage] = useState("landing");
+const [registeredUser, setRegisteredUser] = useState(null);
+const [currentUser, setCurrentUser] = useState(null);
+const [selectedRole, setSelectedRole] = useState("admin");
+const [activeModule, setActiveModule] = useState("dashboard");
 function handleLogout() {
   setIsLoggedIn(false);
+  setCurrentPage("landing");
+  setCurrentUser(null);
+  setSelectedRole("admin");
+  setActiveModule("dashboard");
   setPrediction(null);
   setError("");
 }
@@ -113,17 +132,21 @@ async function fetchPredictionHistory() {
 
     const data = await response.json();
 
-    const history = data.predictions.map((record) => ({
-      id: record.prediction_id,
-      timestamp: new Date(record.created_at).toLocaleString(),
-      prediction:
-        record.predicted_label === "ATTACK"
-          ? "ATTACK (synthetic)"
-          : "NORMAL (synthetic)",
-      prediction_code: record.predicted_label === "ATTACK" ? 1 : 0,
-      attack_probability: record.attack_probability,
-      normal_probability: record.normal_probability,
-    }));
+   const history = data.predictions.map((record) => ({
+  id: record.prediction_id,
+  traffic_id: record.traffic_id,
+  timestamp: new Date(record.created_at).toLocaleString(),
+  prediction:
+    record.predicted_label === "ATTACK"
+      ? "ATTACK (synthetic)"
+      : "NORMAL (synthetic)",
+  prediction_code: record.predicted_label === "ATTACK" ? 1 : 0,
+  attack_probability: record.attack_probability,
+  normal_probability: record.normal_probability,
+  src_bytes: record.src_bytes,
+  dst_bytes: record.dst_bytes,
+  packets: record.packets,
+}));
 
     setPredictionHistory(history);
 
@@ -360,10 +383,75 @@ async function updateSecurityEventStatus(eventId, newStatus) {
   const isAttack =
     prediction?.prediction_code === 1;
 
-  if (!isLoggedIn) {
+ // LANDING PAGE
+if (!isLoggedIn && currentPage === "landing") {
+  return (
+    <LandingPage
+      onLogin={() => setCurrentPage("login")}
+      onRegister={() => setCurrentPage("register")}
+    />
+  );
+}
+
+// REGISTRATION PAGE
+if (!isLoggedIn && currentPage === "register") {
+  return (
+    <RegistrationPage
+      onRegister={(user) => {
+        setRegisteredUser(user);
+        setCurrentUser(user);
+        setCurrentPage("role-selection");
+      }}
+      onLogin={() => setCurrentPage("login")}
+      onBack={() => setCurrentPage("landing")}
+    />
+  );
+}
+
+// LOGIN PAGE
+if (!isLoggedIn && currentPage === "login") {
   return (
     <AdminLogin
-      onLogin={() => setIsLoggedIn(true)}
+      onLogin={() => {
+        const adminUser = {
+          name: "Administrator",
+          username: "dhanumr",
+        };
+
+        setCurrentUser(adminUser);
+        setCurrentPage("role-selection");
+      }}
+    />
+  );
+}
+
+// ROLE SELECTION PAGE
+if (!isLoggedIn && currentPage === "role-selection") {
+  return (
+    <RoleSelection
+      user={currentUser || registeredUser}
+      onBack={() => {
+        setCurrentPage(
+          registeredUser ? "register" : "login"
+        );
+      }}
+      onContinue={(role, user) => {
+        setSelectedRole(role);
+        setCurrentUser(user);
+    setIsLoggedIn(true);
+setCurrentPage("dashboard");
+setActiveModule("dashboard");
+      }}
+    />
+  );
+}
+
+// FALLBACK
+if (!isLoggedIn) {
+  return (
+    <LandingPage
+      onLogin={() => setCurrentPage("login")}
+      onRegister={() => setCurrentPage("register")}
     />
   );
 }
@@ -400,10 +488,47 @@ return (
 
         <div className="nav-label">MAIN MENU</div>
 
-        <div className="nav-item active">▦ Dashboard</div>
-        <div className="nav-item">◉ Intrusion Detection</div>
-        <div className="nav-item">⌁ Network Monitoring</div>
-        <div className="nav-item">⚑ Security Alerts</div>
+<div
+  className={`nav-item ${activeModule === "dashboard" ? "active" : ""}`}
+  onClick={() => setActiveModule("dashboard")}
+>
+  ▦ Dashboard
+</div>
+
+<div
+  className={`nav-item ${activeModule === "intrusion" ? "active" : ""}`}
+  onClick={() => setActiveModule("intrusion")}
+>
+  ◉ Intrusion Detection
+</div>
+
+<div
+  className={`nav-item ${activeModule === "monitoring" ? "active" : ""}`}
+  onClick={() => setActiveModule("monitoring")}
+>
+  ⌁ Network Monitoring
+</div>
+
+<div
+  className={`nav-item ${activeModule === "alerts" ? "active" : ""}`}
+  onClick={() => setActiveModule("alerts")}
+>
+  ⚑ Security Alerts
+</div>
+
+<div
+  className={`nav-item ${activeModule === "ip-analysis" ? "active" : ""}`}
+  onClick={() => setActiveModule("ip-analysis")}
+>
+  🌐 IP Analysis
+</div>
+
+<div
+  className={`nav-item ${activeModule === "reports" ? "active" : ""}`}
+  onClick={() => setActiveModule("reports")}
+>
+  📊 Reports & Analytics
+</div>
 
         <div className="sidebar-bottom">
           <div className="status-dot" />
@@ -424,6 +549,29 @@ return (
 </div>
 
       <main className="main-content">
+  {activeModule === "ip-analysis" ? (
+    <IPAnalysis />
+  ) : activeModule === "reports" ? (
+    <ReportsAnalytics />
+  ) : activeModule === "intrusion" ? (
+    <IntrusionDetection
+      predictionHistory={predictionHistory}
+    />
+  ) : activeModule === "monitoring" ? (
+    <NetworkMonitoring
+      networkStats={networkStats?.wifi}
+      networkRates={networkRates}
+      networkStatus={networkStatus}
+      networkError={networkError}
+    />
+  ) : activeModule === "alerts" ? (
+    <SecurityAlerts
+      securityEvents={securityEvents}
+      onUpdateEventStatus={updateSecurityEventStatus}
+      role={selectedRole}
+    />
+  ) : (
+    <>
         <header className="topbar">
           <div>
             <p className="eyebrow">SECURITY OPERATIONS CENTER</p>
@@ -857,7 +1005,6 @@ return (
               Submit a predefined synthetic network record to the Random Forest
               model and inspect its classification result.
             </p>
-
             <button
               className="primary-button"
               onClick={testPrediction}
@@ -865,9 +1012,7 @@ return (
             >
               {loading ? "Analyzing Traffic..." : "▶ Run AI Prediction"}
             </button>
-
             {error && <div className="error-box">{error}</div>}
-
             {prediction && (
               <div
                 className={`result-box ${
@@ -1161,10 +1306,12 @@ return (
 
 </div>
 </section>
-        <footer className="footer">
+                <footer className="footer">
           <span>Sentinel AI · Network Intrusion Detection Platform</span>
           <span>Experimental prototype · Synthetic data</span>
         </footer>
+      </>
+)}
       </main>
     </div>
   );
