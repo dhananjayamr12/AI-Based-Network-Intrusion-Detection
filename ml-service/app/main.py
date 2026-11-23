@@ -3,7 +3,8 @@ from app.database import (
     get_prediction_history,
     get_dashboard_statistics,
     update_detection_event_status,
-    get_detection_events
+    get_detection_events,
+    get_ip_analysis
 )
 from pathlib import Path
 
@@ -12,9 +13,10 @@ import pandas as pd
 import time
 import psutil
 
-from fastapi import FastAPI, HTTPException
+from app.packet_capture import analyze_pcap_file
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, IPvAnyAddress
 
 # Project configuration
 PROJECT_DIR = Path("D:/AI-NIDS")
@@ -88,6 +90,9 @@ class NetworkTraffic(BaseModel):
     dst_bytes: int = Field(ge=0)
     packets: int = Field(ge=0)
     failed_connections: int = Field(ge=0)
+
+    source_ip: IPvAnyAddress | None = None
+    destination_ip: IPvAnyAddress | None = None
 
 
 @app.get("/")
@@ -300,3 +305,49 @@ def update_security_event(event_id: int, status: str):
             status_code=503,
             detail=f"Unable to update security event: {str(error)}"
         )
+    # IP ANALYSIS API
+@app.get("/ip-analysis/{ip_address}")
+def analyze_ip(ip_address: str, limit: int = 100):
+
+    import ipaddress
+
+    try:
+        validated_ip = str(ipaddress.ip_address(ip_address))
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid IPv4 or IPv6 address."
+        )
+
+    if limit < 1 or limit > 500:
+        raise HTTPException(
+            status_code=400,
+            detail="Limit must be between 1 and 500."
+        )
+
+    try:
+        result = get_ip_analysis(validated_ip, limit)
+
+        return {
+            "status": "success",
+            "data": result,
+            "message": (
+                "IP analysis completed."
+                if result["total_traffic_records"] > 0
+                else "No matching traffic records found."
+            )
+        }
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"IP analysis failed: {str(error)}"
+        )
+    # OFFLINE PCAP ANALYSIS API
+@app.post("/pcap/analyze")
+async def analyze_pcap(file: UploadFile = File(...)):
+    """
+    Upload and analyze an offline PCAP or PCAPNG file.
+    """
+
+    return await analyze_pcap_file(file)

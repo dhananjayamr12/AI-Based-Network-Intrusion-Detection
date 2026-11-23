@@ -1,0 +1,109 @@
+.registration-page {
+  min-height: 100vh;
+  background: #080f1e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 15px;
+  color: #fff;
+}
+
+.registration-card {
+  width: 100%;
+  max-width: 470px;
+  background: #111d32;
+  border: 1px solid #263b59;
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.registration-back {
+  background: none;
+  border: none;
+  color: #8bb8ff;
+  cursor: pointer;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.registration-logo {
+  font-size: 38px;
+  text-align: center;
+}
+
+.registration-card h1 {
+  text-align: center;
+  margin: 12px 0 8px;
+  font-size: 25px;
+}
+
+.registration-card > p {
+  text-align: center;
+  color: #94a9c5;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+.registration-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.registration-card label {
+  color: #cbd8eb;
+  font-size: 13px;
+  margin-top: 7px;
+}
+
+.registration-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  background: #0b1527;
+  border: 1px solid #304562;
+  border-radius: 8px;
+  color: white;
+  outline: none;
+}
+
+.registration-card input:focus {
+  border-color: #438cff;
+}
+
+.registration-submit {
+  margin-top: 15px;
+  padding: 13px;
+  background: linear-gradient(90deg, #2563eb, #0ea5e9);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.registration-submit:hover {
+  opacity: 0.9;
+}
+
+.registration-error {
+  color: #ff7777;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.registration-login {
+  text-align: center;
+  color: #9aacc4;
+  margin-top: 22px;
+  font-size: 14px;
+}
+
+.registration-login button {
+  background: none;
+  border: none;
+  color: #60a5fa;
+  cursor: pointer;
+  margin-left: 5px;
+}

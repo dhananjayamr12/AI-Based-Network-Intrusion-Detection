@@ -1,0 +1,400 @@
+.landing-page {
+  min-height: 100vh;
+  background: #080e1c;
+  color: #eaf2ff;
+  font-family: Arial, sans-serif;
+}
+
+.landing-navbar {
+  min-height: 85px;
+  padding: 0 7%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: #0b1323;
+}
+
+.landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-logo {
+  font-size: 34px;
+}
+
+.landing-brand h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.landing-brand p {
+  margin: 4px 0 0;
+  color: #7186a8;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+.landing-nav-links {
+  display: flex;
+  gap: 32px;
+}
+
+.landing-nav-links a {
+  color: #aab9d0;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.landing-nav-links a:hover {
+  color: #60a5fa;
+}
+
+.landing-nav-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.landing-login,
+.landing-register,
+.hero-primary,
+.landing-contact button {
+  padding: 12px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.landing-login {
+  background: transparent;
+  color: white;
+  border: 1px solid #334155;
+}
+
+.landing-register,
+.hero-primary,
+.landing-contact button {
+  background: #2563eb;
+  color: white;
+  border: none;
+}
+
+.landing-register:hover,
+.hero-primary:hover,
+.landing-contact button:hover {
+  background: #3b82f6;
+}
+
+.landing-hero {
+  min-height: 590px;
+  padding: 65px 9%;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  align-items: center;
+  gap: 40px;
+  background:
+    radial-gradient(circle at 80% 50%, #142c50 0%, transparent 40%),
+    #080e1c;
+}
+
+.hero-badge,
+.section-label,
+.landing-section-heading > span {
+  color: #60a5fa;
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.hero-content h1 {
+  max-width: 650px;
+  font-size: clamp(40px, 5vw, 65px);
+  line-height: 1.12;
+  margin: 25px 0;
+}
+
+.hero-content h1 span,
+.landing-about h2 span {
+  color: #60a5fa;
+}
+
+.hero-content > p,
+.landing-about p,
+.landing-contact p {
+  color: #9aacc6;
+  font-size: 16px;
+  line-height: 1.9;
+  max-width: 590px;
+}
+
+.hero-buttons {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.hero-secondary {
+  color: #dbeafe;
+  text-decoration: none;
+}
+
+.hero-highlights {
+  display: flex;
+  gap: 45px;
+  margin-top: 55px;
+}
+
+.hero-highlights div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.hero-highlights strong {
+  font-size: 23px;
+  color: #60a5fa;
+}
+
+.hero-highlights span {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.hero-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.security-orbit {
+  width: 330px;
+  height: 330px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.orbit-ring {
+  position: absolute;
+  width: 290px;
+  height: 290px;
+  border: 1px solid #2563eb;
+  border-radius: 50%;
+  opacity: 0.4;
+}
+
+.orbit-ring-two {
+  width: 220px;
+  height: 220px;
+  border-color: #60a5fa;
+}
+
+.security-shield {
+  width: 130px;
+  height: 145px;
+  border-radius: 35%;
+  background: linear-gradient(145deg, #2563eb, #142e62);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 55px;
+  box-shadow: 0 0 70px rgba(37,99,235,0.4);
+}
+
+.security-shield span {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #bfdbfe;
+}
+
+.orbit-node {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #172e55;
+  border: 1px solid #3b82f6;
+  display: grid;
+  place-items: center;
+  color: #93c5fd;
+  font-weight: bold;
+}
+
+.node-one { top: 20px; }
+.node-two { right: 5px; }
+.node-three { bottom: 25px; left: 40px; }
+
+.hero-status-card {
+  margin-top: 15px;
+  padding: 14px 20px;
+  border: 1px solid #263d61;
+  border-radius: 10px;
+  background: #111e32;
+  color: #bfdbfe;
+  font-size: 13px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+}
+
+.landing-features {
+  padding: 90px 8%;
+  background: #0b1323;
+}
+
+.landing-section-heading {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.landing-section-heading h2,
+.landing-about h2 {
+  font-size: 36px;
+  margin: 17px 0;
+}
+
+.landing-section-heading p {
+  color: #94a3b8;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.feature-card {
+  padding: 28px;
+  background: #111e32;
+  border: 1px solid #243650;
+  border-radius: 13px;
+  transition: 0.3s;
+}
+
+.feature-card:hover {
+  transform: translateY(-7px);
+  border-color: #3b82f6;
+}
+
+.feature-icon {
+  font-size: 32px;
+}
+
+.feature-card h3 {
+  margin-top: 20px;
+  color: #e2e8f0;
+}
+
+.feature-card p {
+  color: #94a3b8;
+  line-height: 1.8;
+  font-size: 13px;
+}
+
+.landing-about {
+  padding: 100px 12%;
+  background: #080e1c;
+}
+
+.landing-about h2 {
+  max-width: 650px;
+  line-height: 1.4;
+}
+
+.landing-contact {
+  padding: 75px 20px;
+  text-align: center;
+  background: #102344;
+}
+
+.landing-contact h2 {
+  font-size: 34px;
+}
+
+.landing-contact p {
+  margin: 15px auto 25px;
+}
+
+.landing-footer {
+  padding: 40px 8%;
+  background: #060b14;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.landing-footer .landing-brand {
+  justify-content: center;
+}
+
+.landing-footer p {
+  font-size: 13px;
+  margin: 18px 0;
+}
+
+.landing-footer > span {
+  font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .landing-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .hero-content > p {
+    margin: auto;
+  }
+
+  .hero-buttons,
+  .hero-highlights {
+    justify-content: center;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .landing-nav-links {
+    display: none;
+  }
+}
+
+@media (max-width: 550px) {
+  .landing-navbar {
+    padding: 15px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .landing-nav-actions {
+    width: 100%;
+  }
+
+  .landing-nav-actions button {
+    flex: 1;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-highlights {
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .security-orbit {
+    transform: scale(0.85);
+  }
+}

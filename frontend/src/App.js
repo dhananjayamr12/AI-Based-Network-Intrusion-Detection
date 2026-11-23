@@ -54,6 +54,10 @@ function toggleTheme() {
 const [networkStats, setNetworkStats] = useState(null);
 const [networkStatus, setNetworkStatus] = useState("Connecting...");
 const [networkError, setNetworkError] = useState("");
+// PCAP analysis state
+const [pcapResult, setPcapResult] = useState(null);
+const [pcapLoading, setPcapLoading] = useState(false);
+const [pcapError, setPcapError] = useState("");
 const [isLoggedIn, setIsLoggedIn] = useState(false);
 const [currentPage, setCurrentPage] = useState("landing");
 const [registeredUser, setRegisteredUser] = useState(null);
@@ -318,6 +322,7 @@ async function updateSecurityEventStatus(eventId, newStatus) {
           }
         }
 
+
         // Store the current reading for the next calculation
         return {
           wifi,
@@ -330,6 +335,36 @@ async function updateSecurityEventStatus(eventId, newStatus) {
     } catch (err) {
       setNetworkStatus("Unavailable");
       setNetworkError(err.message);
+    }
+  }
+
+  // Upload and analyze offline PCAP files
+  // Upload and analyze offline PCAP files
+  async function analyzePcap(file) {
+    setPcapLoading(true);
+    setPcapError("");
+    setPcapResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`${API_URL}/pcap/analyze`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "PCAP analysis failed.");
+      }
+
+      setPcapResult(data);
+    } catch (err) {
+      setPcapError(err.message);
+    } finally {
+      setPcapLoading(false);
     }
   }
 
@@ -559,11 +594,15 @@ return (
     />
   ) : activeModule === "monitoring" ? (
     <NetworkMonitoring
-      networkStats={networkStats?.wifi}
-      networkRates={networkRates}
-      networkStatus={networkStatus}
-      networkError={networkError}
-    />
+  networkStats={networkStats?.wifi}
+  networkRates={networkRates}
+  networkStatus={networkStatus}
+  networkError={networkError}
+  onAnalyzePcap={analyzePcap}
+  pcapResult={pcapResult}
+  pcapLoading={pcapLoading}
+  pcapError={pcapError}
+/>
   ) : activeModule === "alerts" ? (
     <SecurityAlerts
       securityEvents={securityEvents}

@@ -58,7 +58,7 @@ def save_prediction(
     with get_connection() as connection:
         with connection.cursor() as cursor:
 
-            # Store network traffic features
+                      # Store network traffic features
             cursor.execute(
                 """
                 INSERT INTO network_traffic (
@@ -67,9 +67,11 @@ def save_prediction(
                     dst_bytes,
                     packets,
                     failed_connections,
-                    source_type
+                    source_type,
+                    source_ip,
+                    destination_ip
                 )
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING traffic_id;
                 """,
                 (
@@ -78,7 +80,9 @@ def save_prediction(
                     traffic.dst_bytes,
                     traffic.packets,
                     traffic.failed_connections,
-                    "manual"
+                    "manual",
+                    str(traffic.source_ip) if traffic.source_ip else None,
+                    str(traffic.destination_ip) if traffic.destination_ip else None
                 )
             )
 
@@ -306,4 +310,142 @@ def update_detection_event_status(event_id: int, new_status: str):
                 "event_id": row[0],
                 "status": row[1],
                 "created_at": row[2]
+            }
+def get_ip_analysis(ip_address: str, limit: int = 100):
+    """Retrieve traffic and security events associated with an IP."""
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+
+            # Get traffic and prediction statistics
+            cursor.execute(
+                """
+                SELECT
+                    COUNT(DISTINCT t.traffic_id),
+                    COUNT(DISTINCT p.prediction_id),
+                    COUNT(DISTINCT e.event_id),
+                    COUNT(DISTINCT p.prediction_id)
+                        FILTER (WHERE p.predicted_label = 'ATTACK'),
+                    COUNT(DISTINCT p.prediction_id)
+                        FILTER (WHERE p.predicted_label = 'NORMAL')
+                FROM network_traffic t
+                LEFT JOIN prediction_logs p
+                    ON t.traffic_id = p.traffic_id
+                LEFT JOIN detection_events e
+                    ON p.prediction_id = e.prediction_id
+                WHERE t.source_ip = %s::inet
+                   OR t.destination_ip = %s::inet
+                """,
+                (ip_address, ip_address)
+            )
+
+            stats = cursor.fetchone()
+
+            # Retrieve matching traffic records
+            cursor.execute(
+                """
+                SELECT
+                    t.traffic_id,
+                    t.source_ip::text,
+                    t.destination_ip::text,
+                    t.duration,
+                    t.src_bytes,
+                    t.dst_bytes,
+                    t.packets,
+                    t.failed_connections,
+                    t.created_at,
+                    p.prediction_id,
+                    p.predicted_label,
+                    p.attack_probability,
+                    e.event_id,
+                    e.severity,
+                    e.status
+                FROM network_traffic t
+                LEFT JOIN prediction_logs p
+                    ON t.traffic_id = p.traffic_id
+                LEFT JOIN detection_events e
+                    ON p.prediction_id = e.prediction_id
+                WHERE t.source_ip = %s::inet
+                   OR t.destination_ip = %s::inet
+                ORDER BY t.created_at DESC
+                LIMIT %s
+                """,
+                (ip_address, ip_address, limit)
+            )
+
+            rows = cursor.fetchall()
+
+            columns = [
+                "traffic_id",
+                "source_ip",
+                "destination_ip",
+                "duration",
+                "src_bytes",
+                "dst_bytes",
+                "packets",
+                "failed_connections",
+                "created_at",
+                "prediction_id",
+                "predicted_label",
+                "attack_probability",
+                "event_id",
+                "severity",
+                "status"
+            ]
+
+            records = [
+                dict(zip(columns, row))
+                for row in rows
+            ]
+
+            return {
+                "ip_address": ip_address,
+                "total_traffic_records": stats[0],
+                "total_predictions": stats[1],
+                "total_detection_events": stats[2],
+                "attack_predictions": stats[3] or 0,
+                "normal_predictions": stats[4] or 0,
+                "records": records
+            }
+    
+def save_pcap_flow(flow):
+    """Save an extracted PCAP network flow to PostgreSQL."""
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+
+            cursor.execute(
+                """
+                INSERT INTO network_traffic (
+                    duration,
+                    src_bytes,
+                    dst_bytes,
+                    packets,
+                    failed_connections,
+                    source_type,
+                    source_ip,
+                    destination_ip
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING traffic_id;
+                """,
+                (
+                    flow["duration"],
+                    flow["src_bytes"],
+                    flow["dst_bytes"],
+                    flow["packets"],
+                    0,
+                    "pcap",
+                    flow["source_ip"],
+                    flow["destination_ip"]
+                )
+            )
+
+            traffic_id = cursor.fetchone()[0]
+
+            return {
+                "traffic_id": traffic_id,
+                "source_ip": flow["source_ip"],
+                "destination_ip": flow["destination_ip"],
+                "source_type": "pcap"
             }
